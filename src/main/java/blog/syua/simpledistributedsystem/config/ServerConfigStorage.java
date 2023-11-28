@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.Getter;
 
-@Getter
 public class ServerConfigStorage {
 
 	@Getter
@@ -19,6 +18,10 @@ public class ServerConfigStorage {
 
 	public synchronized void loadConfig(File configFile) throws IOException {
 		serverConfig = objectMapper.readValue(configFile, ServerConfig.class);
+	}
+
+	public int getPort() {
+		return Integer.parseInt(serverConfig.getServerPort());
 	}
 
 }
