@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ServerConfig {
 
-	private String serverPort;
+	private String servicePort;
 	private String sync;
 	private List<String> replicas;
 
