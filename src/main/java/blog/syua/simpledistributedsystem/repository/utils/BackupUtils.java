@@ -1,4 +1,4 @@
-package blog.syua.simpledistributedsystem.repository;
+package blog.syua.simpledistributedsystem.repository.utils;
 
 import static blog.syua.simpledistributedsystem.repository.MemoRepository.*;
 

@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import blog.syua.simpledistributedsystem.config.ServerConfigStorage;
-import blog.syua.simpledistributedsystem.repository.BackupUtils;
+import blog.syua.simpledistributedsystem.repository.utils.BackupUtils;
 import blog.syua.simpledistributedsystem.repository.dto.BodyMemo;
 import blog.syua.simpledistributedsystem.repository.dto.Memo;
 import blog.syua.simpledistributedsystem.repository.lock.IdLock;
