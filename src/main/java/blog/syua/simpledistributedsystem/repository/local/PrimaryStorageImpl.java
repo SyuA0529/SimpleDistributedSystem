@@ -50,7 +50,6 @@ public class PrimaryStorageImpl implements PrimaryStorage {
 
 		Request request = new Request.Builder()
 			.url(replicaURLs.get(replicaIndex) + "/primary/" + id)
-			.header(REPLICA_PORT_HEADER, String.valueOf(configStorage.getPort()))
 			.get()
 			.build();
 		log.info("REPLICA [REQUEST] Move item to new primary");

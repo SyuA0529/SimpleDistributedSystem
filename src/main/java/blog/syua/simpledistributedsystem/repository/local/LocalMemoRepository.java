@@ -14,12 +14,12 @@ public interface LocalMemoRepository extends MemoRepository {
 
 	ResponseEntity<Void> sendPrimary(HttpServletRequest request, @PathVariable int id);
 
-	ResponseEntity<Void> backupPost(@RequestBody BodyMemo requestMemo);
+	ResponseEntity<Void> backupPost(HttpServletRequest request, @RequestBody BodyMemo requestMemo);
 
-	ResponseEntity<Void> backupPut(@PathVariable int id, @RequestBody BodyMemo requestMemo);
+	ResponseEntity<Void> backupPut(HttpServletRequest request, @PathVariable int id, @RequestBody BodyMemo requestMemo);
 
-	ResponseEntity<Void> backupPatch(@PathVariable int id, @RequestBody BodyMemo requestMemo);
+	ResponseEntity<Void> backupPatch(HttpServletRequest request, @PathVariable int id, @RequestBody BodyMemo requestMemo);
 
-	ResponseEntity<Void> backupDelete(@PathVariable int id);
+	ResponseEntity<Void> backupDelete(HttpServletRequest request, @PathVariable int id);
 
 }

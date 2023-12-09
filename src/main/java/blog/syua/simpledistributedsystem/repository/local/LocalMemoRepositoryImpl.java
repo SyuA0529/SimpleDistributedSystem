@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import blog.syua.simpledistributedsystem.config.ServerConfigStorage;
-import blog.syua.simpledistributedsystem.repository.BackupUtils;
+import blog.syua.simpledistributedsystem.repository.utils.BackupUtils;
 import blog.syua.simpledistributedsystem.repository.dto.BodyMemo;
 import blog.syua.simpledistributedsystem.repository.dto.Memo;
 import blog.syua.simpledistributedsystem.repository.lock.IdLock;
@@ -106,26 +106,26 @@ public class LocalMemoRepositoryImpl implements LocalMemoRepository {
 
 	@Override
 	@PostMapping("/backup")
-	public ResponseEntity<Void> backupPost(@RequestBody BodyMemo requestMemo) {
-		return doBackupTransaction(requestMemo.getId(), requestMemo, memoStorage::save);
+	public ResponseEntity<Void> backupPost(HttpServletRequest request, @RequestBody BodyMemo requestMemo) {
+		return doBackupTransaction(requestMemo.getId(), requestMemo, memoStorage::save, request);
 	}
 
 	@Override
 	@PutMapping("/backup/{id}")
-	public ResponseEntity<Void> backupPut(@PathVariable int id, @RequestBody BodyMemo requestMemo) {
-		return doBackupTransaction(id, requestMemo, memoStorage::put);
+	public ResponseEntity<Void> backupPut(HttpServletRequest request, @PathVariable int id, @RequestBody BodyMemo requestMemo) {
+		return doBackupTransaction(id, requestMemo, memoStorage::put, request);
 	}
 
 	@Override
 	@PatchMapping("/backup/{id}")
-	public ResponseEntity<Void> backupPatch(@PathVariable int id, @RequestBody BodyMemo requestMemo) {
-		return doBackupTransaction(id, requestMemo, memoStorage::patch);
+	public ResponseEntity<Void> backupPatch(HttpServletRequest request, @PathVariable int id, @RequestBody BodyMemo requestMemo) {
+		return doBackupTransaction(id, requestMemo, memoStorage::patch, request);
 	}
 
 	@DeleteMapping("/backup/{id}")
 	@Override
-	public ResponseEntity<Void> backupDelete(@PathVariable int id) {
-		return doDeleteBackupTransaction(id, memoStorage::delete);
+	public ResponseEntity<Void> backupDelete(HttpServletRequest request, @PathVariable int id) {
+		return doDeleteBackupTransaction(id, memoStorage::delete, request);
 	}
 
 	@Override
@@ -183,10 +183,11 @@ public class LocalMemoRepositoryImpl implements LocalMemoRepository {
 
 	@NotNull
 	private ResponseEntity<Void> doBackupTransaction(int id, BodyMemo requestMemo,
-		BiConsumer<Integer, BodyMemo> consumer) {
+		BiConsumer<Integer, BodyMemo> consumer, HttpServletRequest request) {
 		try {
 			idLock.lock(id);
 			consumer.accept(id, requestMemo);
+			changeMemoPrimary(id, request);
 			log.info("REPLICA [REPLY] Acknowledge update");
 			return ResponseEntity.ok().build();
 		} finally {
@@ -195,12 +196,13 @@ public class LocalMemoRepositoryImpl implements LocalMemoRepository {
 	}
 
 	@NotNull
-	private ResponseEntity<Void> doDeleteBackupTransaction(int id, IntConsumer consumer) {
+	private ResponseEntity<Void> doDeleteBackupTransaction(int id, IntConsumer consumer, HttpServletRequest request) {
 		boolean successful = false;
 		try {
 			idLock.lock(id);
 			consumer.accept(id);
 			successful = true;
+			changeMemoPrimary(id, request);
 			log.info("REPLICA [REPLY] Acknowledge update");
 			return ResponseEntity.ok().build();
 		} finally {
@@ -209,6 +211,10 @@ public class LocalMemoRepositoryImpl implements LocalMemoRepository {
 				idLock.remove(id);
 			}
 		}
+	}
+
+	private void changeMemoPrimary(int id, HttpServletRequest request) {
+		primaryStorage.releasePrimary(id, request.getRemoteAddr() + ":" + request.getHeader(PrimaryStorage.REPLICA_PORT_HEADER));
 	}
 
 	private Memo doTransaction(String method, int id, Memo memo, BiFunction<Integer, Memo, Memo> function) throws
