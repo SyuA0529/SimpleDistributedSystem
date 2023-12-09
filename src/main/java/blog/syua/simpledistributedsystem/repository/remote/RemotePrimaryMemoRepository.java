@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import org.jetbrains.annotations.Nullable;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -60,27 +61,54 @@ public class RemotePrimaryMemoRepository implements RemoteMemoRepository {
 	@PostMapping
 	public Memo save(@RequestBody BodyMemo requestMemo) throws JsonProcessingException {
 		int memoId = memoStorage.getNewMemoId();
-		return createOrUpdateAspectWithLock(RequestMethod.POST.name(), memoId, requestMemo,
+		return doCreateOrUpdateTransaction(RequestMethod.POST.name(), memoId, requestMemo,
 			memoStorage::save);
 	}
 
 	@Override
 	@PutMapping("/{id}")
 	public Memo put(@PathVariable int id, @RequestBody BodyMemo requestMemo) throws JsonProcessingException {
-		return createOrUpdateAspectWithLock(RequestMethod.PUT.name(), id, requestMemo,
+		return doCreateOrUpdateTransaction(RequestMethod.PUT.name(), id, requestMemo,
 			memoStorage::put);
 	}
 
 	@Override
 	@PatchMapping("/{id}")
 	public Memo patch(@PathVariable int id, @RequestBody BodyMemo requestMemo) throws JsonProcessingException {
-		return createOrUpdateAspectWithLock(RequestMethod.PATCH.name(), id, requestMemo,
+		return doCreateOrUpdateTransaction(RequestMethod.PATCH.name(), id, requestMemo,
 			memoStorage::patch);
 	}
 
 	@Override
 	@DeleteMapping("/{id}")
 	public Memo delete(@PathVariable int id) throws IOException {
+		return doDeleteTransaction(id);
+	}
+
+	private boolean backup(Memo memo, String method) throws
+		JsonProcessingException {
+		return method.equals(RequestMethod.DELETE.name()) ?
+			BackupUtils.syncDelete(replicaURLs, memoStorage, memo) :
+			BackupUtils.syncCreateOrUpdate(replicaURLs, memoStorage, method, memo);
+	}
+
+	private Memo doCreateOrUpdateTransaction(String method, int id, BodyMemo memo,
+		BiFunction<Integer, BodyMemo, Memo> function) throws JsonProcessingException {
+		try {
+			idLock.lock(id);
+			Memo savedMemo = function.apply(id, memo);
+			if (Objects.isNull(savedMemo) || !backup(savedMemo, method)) {
+				return null;
+			}
+			return savedMemo;
+		} finally {
+			idLock.release(id);
+			log.info("REPLICA [REPLY] Forward request to primary");
+		}
+	}
+
+	@Nullable
+	private Memo doDeleteTransaction(int id) throws JsonProcessingException {
 		boolean successful = false;
 		try {
 			idLock.lock(id);
@@ -95,27 +123,7 @@ public class RemotePrimaryMemoRepository implements RemoteMemoRepository {
 			if (successful) {
 				idLock.remove(id);
 			}
-		}
-	}
-
-	private boolean backup(Memo memo, String method) throws
-		JsonProcessingException {
-		return method.equals(RequestMethod.DELETE.name()) ?
-			BackupUtils.syncDelete(replicaURLs, memoStorage, memo) :
-			BackupUtils.syncCreateOrUpdate(replicaURLs, memoStorage, method, memo);
-	}
-
-	private Memo createOrUpdateAspectWithLock(String method, int id, BodyMemo memo,
-		BiFunction<Integer, BodyMemo, Memo> function) throws JsonProcessingException {
-		try {
-			idLock.lock(id);
-			Memo savedMemo = function.apply(id, memo);
-			if (Objects.isNull(savedMemo) || !backup(savedMemo, method)) {
-				return null;
-			}
-			return savedMemo;
-		} finally {
-			idLock.release(id);
+			log.info("REPLICA [REPLY] Forward request to primary");
 		}
 	}
 

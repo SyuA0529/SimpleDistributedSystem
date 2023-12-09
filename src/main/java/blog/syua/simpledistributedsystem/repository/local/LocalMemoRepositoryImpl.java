@@ -97,6 +97,7 @@ public class LocalMemoRepositoryImpl implements LocalMemoRepository {
 					.headers(httpHeaders)
 					.build();
 			}
+			log.info("REPLICA [REPLY] Move item to new primary");
 			return response;
 		} finally {
 			idLock.release(id);
@@ -186,6 +187,7 @@ public class LocalMemoRepositoryImpl implements LocalMemoRepository {
 		try {
 			idLock.lock(id);
 			consumer.accept(id, requestMemo);
+			log.info("REPLICA [REPLY] Acknowledge update");
 			return ResponseEntity.ok().build();
 		} finally {
 			idLock.release(id);
@@ -199,6 +201,7 @@ public class LocalMemoRepositoryImpl implements LocalMemoRepository {
 			idLock.lock(id);
 			consumer.accept(id);
 			successful = true;
+			log.info("REPLICA [REPLY] Acknowledge update");
 			return ResponseEntity.ok().build();
 		} finally {
 			idLock.release(id);

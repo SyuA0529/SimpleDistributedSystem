@@ -10,9 +10,11 @@ import org.springframework.stereotype.Component;
 import blog.syua.simpledistributedsystem.config.ServerConfigStorage;
 import blog.syua.simpledistributedsystem.repository.utils.HttpUtils;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.Request;
 import okhttp3.Response;
 
+@Slf4j
 @Component
 public class PrimaryStorageImpl implements PrimaryStorage {
 
@@ -51,6 +53,7 @@ public class PrimaryStorageImpl implements PrimaryStorage {
 			.header(REPLICA_PORT_HEADER, String.valueOf(configStorage.getPort()))
 			.get()
 			.build();
+		log.info("REPLICA [REQUEST] Move item to new primary");
 		try (Response response = HttpUtils.requestSync(request)) {
 			if (response.isSuccessful()) {
 				primarys.put(id, MY_REPLICA_INDEX);

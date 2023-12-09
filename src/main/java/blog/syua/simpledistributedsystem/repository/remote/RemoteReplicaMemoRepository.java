@@ -49,28 +49,28 @@ public class RemoteReplicaMemoRepository implements RemoteMemoRepository {
 	@PostMapping
 	public ResponseEntity<Void> backupPost(@RequestBody BodyMemo requestMemo) {
 		memoStorage.save(requestMemo.getId(), requestMemo);
-		log.info("REPLICA [REPLY] Acknowledge update (W4)");
+		logBackup();
 		return ResponseEntity.ok().build();
 	}
 
 	@PutMapping("/{id}")
 	public ResponseEntity<Void> backupPut(@PathVariable int id, @RequestBody BodyMemo requestMemo) {
 		memoStorage.put(id, requestMemo);
-		log.info("REPLICA [REPLY] Acknowledge update (W4)");
+		logBackup();
 		return ResponseEntity.ok().build();
 	}
 
 	@PatchMapping("/{id}")
 	public ResponseEntity<Void> backupPatch(@PathVariable int id, @RequestBody BodyMemo requestMemo) {
 		memoStorage.patch(id, requestMemo);
-		log.info("REPLICA [REPLY] Acknowledge update (W4)");
+		logBackup();
 		return ResponseEntity.ok().build();
 	}
 
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Void> backupDelete(@PathVariable int id) {
 		memoStorage.delete(id);
-		log.info("REPLICA [REPLY] Acknowledge update (W4)");
+		logBackup();
 		return ResponseEntity.ok().build();
 	}
 
@@ -123,6 +123,10 @@ public class RemoteReplicaMemoRepository implements RemoteMemoRepository {
 		}
 	}
 
+	private static void logBackup() {
+		log.info("REPLICA [REPLY] Acknowledge update");
+	}
+
 	private void syncAllMemos() throws IOException {
 		Request syncRequest = new Request.Builder()
 			.url(primaryURL)
@@ -144,7 +148,7 @@ public class RemoteReplicaMemoRepository implements RemoteMemoRepository {
 
 	private Memo forwardRequest(Request request) throws IOException {
 		// W1
-		log.info("REPLICA [REQUEST] Forward request to primary (W2)");
+		log.info("REPLICA [REQUEST] Forward request to primary");
 		try (Response response = httpClient.newCall(request).execute()) {
 			String responseBody = Objects.requireNonNull(response.body()).string();
 			boolean isSuccess = isResponseSuccessful(response, responseBody);

@@ -23,7 +23,7 @@ public class BackupUtils {
 
 	private static final byte[] EMPTY_BYTES = new byte[0];
 	private static ExecutorService executorService;
-	private static ObjectMapper objectMapper = new ObjectMapper();
+	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	private BackupUtils() {
 	}
@@ -38,10 +38,10 @@ public class BackupUtils {
 			JSON_TYPE);
 		String additionalUrl = method.equals(RequestMethod.POST.name()) ? "" : "/" + savedMemo.getId();
 		// W3 & W4
-		if (!tellUpdate(replicaURLs, additionalUrl, method, updateRequestBody, "(W3)")) {
+		if (!tellUpdate(replicaURLs, additionalUrl, method, updateRequestBody)) {
 			memoStorage.delete(savedMemo.getId());
 			okhttp3.RequestBody deleteRequestBody = okhttp3.RequestBody.create(EMPTY_BYTES);
-			tellUpdate(replicaURLs, "/" + savedMemo.getId(), RequestMethod.DELETE.name(), deleteRequestBody, "(W3)");
+			tellUpdate(replicaURLs, "/" + savedMemo.getId(), RequestMethod.DELETE.name(), deleteRequestBody);
 			return false;
 		}
 		return true;
@@ -51,24 +51,24 @@ public class BackupUtils {
 		JsonProcessingException {
 		okhttp3.RequestBody deleteRequestBody = okhttp3.RequestBody.create(EMPTY_BYTES);
 		// W3 & W4
-		if (!tellUpdate(replicaURLs, "/" + memo.getId(), RequestMethod.DELETE.name(), deleteRequestBody, "(W3)")) {
+		if (!tellUpdate(replicaURLs, "/" + memo.getId(), RequestMethod.DELETE.name(), deleteRequestBody)) {
 			BodyMemo savedMemo = new BodyMemo(memo.getId(), memo.getTitle(),
 				memo instanceof BodyMemo ? ((BodyMemo)memo).getBody() : "");
 			memoStorage.save(memo.getId(), savedMemo);
 			okhttp3.RequestBody postRequestBody = okhttp3.RequestBody.create(objectMapper.writeValueAsBytes(memo),
 				JSON_TYPE);
-			tellUpdate(replicaURLs, "", RequestMethod.POST.name(), postRequestBody, "(W3");
+			tellUpdate(replicaURLs, "", RequestMethod.POST.name(), postRequestBody);
 			return false;
 		}
 		return true;
 	}
 
 	private static boolean tellUpdate(List<String> replicaURLs, String additionalURI, String method,
-		okhttp3.RequestBody requestBody, String writeTime) {
+		okhttp3.RequestBody requestBody) {
 		List<BackupTask> backupTasks = replicaURLs.stream()
 			.map(replicaURL -> new BackupTask(replicaURL + additionalURI, method, requestBody))
 			.toList();
-		log.info("REPLICA [REQUEST] Tell backups to update {}", writeTime);
+		log.info("REPLICA [REQUEST] Tell backups to update to {}", replicaURLs);
 		boolean isSuccessful = true;
 		try {
 			for (Future<Boolean> future : executorService.invokeAll(backupTasks)) {
