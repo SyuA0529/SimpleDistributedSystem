@@ -197,19 +197,14 @@ public class LocalMemoRepositoryImpl implements LocalMemoRepository {
 
 	@NotNull
 	private ResponseEntity<Void> doDeleteBackupTransaction(int id, IntConsumer consumer, HttpServletRequest request) {
-		boolean successful = false;
 		try {
 			idLock.lock(id);
 			consumer.accept(id);
-			successful = true;
 			changeMemoPrimary(id, request);
 			log.info("REPLICA [REPLY] Acknowledge update");
 			return ResponseEntity.ok().build();
 		} finally {
 			idLock.release(id);
-			if (successful) {
-				idLock.remove(id);
-			}
 		}
 	}
 
@@ -219,7 +214,6 @@ public class LocalMemoRepositoryImpl implements LocalMemoRepository {
 
 	private Memo doTransaction(String method, int id, Memo memo, BiFunction<Integer, Memo, Memo> function) throws
 		IOException {
-		boolean successful = false;
 		try {
 			idLock.lock(id);
 			if (!primaryStorage.getPrimary(id)) {
@@ -230,13 +224,9 @@ public class LocalMemoRepositoryImpl implements LocalMemoRepository {
 				return null;
 			}
 			doBackup(method, resultMemo);
-			successful = true;
 			return resultMemo;
 		} finally {
 			idLock.release(id);
-			if (successful) {
-				idLock.remove(id);
-			}
 		}
 	}
 
