@@ -77,6 +77,11 @@ public class PrimaryStorageImpl implements PrimaryStorage {
 		if (primarys.getOrDefault(id, defaultPrimaryIndex) != MY_REPLICA_INDEX) {
 			throw new IllegalArgumentException("primary가 아닙니다");
 		}
+		changePrimary(id, newPrimaryAddr);
+	}
+
+	@Override
+	public void changePrimary(int id, String newPrimaryAddr) {
 		String findReplicaInfo = replicaURLs.stream()
 			.filter(replicaInfo -> replicaInfo.contains(newPrimaryAddr))
 			.findAny()

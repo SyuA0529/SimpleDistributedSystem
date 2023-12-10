@@ -214,7 +214,7 @@ public class LocalMemoRepositoryImpl implements LocalMemoRepository {
 	}
 
 	private void changeMemoPrimary(int id, HttpServletRequest request) {
-		primaryStorage.releasePrimary(id, request.getRemoteAddr() + ":" + request.getHeader(PrimaryStorage.REPLICA_PORT_HEADER));
+		primaryStorage.changePrimary(id, request.getRemoteAddr() + ":" + request.getHeader(PrimaryStorage.REPLICA_PORT_HEADER));
 	}
 
 	private Memo doTransaction(String method, int id, Memo memo, BiFunction<Integer, Memo, Memo> function) throws

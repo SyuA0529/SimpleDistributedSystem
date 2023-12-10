@@ -14,4 +14,5 @@ public interface PrimaryStorage {
 
 	void releasePrimary(int id, String remoteAddr);
 
+	void changePrimary(int id, String newPrimaryAddr);
 }
