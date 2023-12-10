@@ -30,7 +30,7 @@ public class IdLockImpl implements IdLock {
 	private synchronized ReentrantLock getLock(int id) {
 		ReentrantLock lock = locks.get(id);
 		if (Objects.isNull(lock)) {
-			lock = new ReentrantLock(false);
+			lock = new ReentrantLock(true);
 			locks.put(id, lock);
 		}
 		return lock;

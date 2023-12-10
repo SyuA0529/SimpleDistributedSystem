@@ -20,10 +20,10 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import blog.syua.simpledistributedsystem.config.ServerConfigStorage;
-import blog.syua.simpledistributedsystem.repository.utils.BackupUtils;
 import blog.syua.simpledistributedsystem.repository.dto.BodyMemo;
 import blog.syua.simpledistributedsystem.repository.dto.Memo;
 import blog.syua.simpledistributedsystem.repository.lock.IdLock;
+import blog.syua.simpledistributedsystem.repository.utils.BackupUtils;
 import blog.syua.simpledistributedsystem.storage.MemoStorage;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -109,20 +109,15 @@ public class RemotePrimaryMemoRepository implements RemoteMemoRepository {
 
 	@Nullable
 	private Memo doDeleteTransaction(int id) throws JsonProcessingException {
-		boolean successful = false;
 		try {
 			idLock.lock(id);
 			Memo deletedMemo = memoStorage.delete(id);
 			if (Objects.isNull(deletedMemo) || !backup(deletedMemo, RequestMethod.DELETE.name())) {
 				return null;
 			}
-			successful = true;
 			return deletedMemo;
 		} finally {
 			idLock.release(id);
-			if (successful) {
-				idLock.remove(id);
-			}
 			log.info("REPLICA [REPLY] Forward request to primary");
 		}
 	}
